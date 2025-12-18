@@ -1,0 +1,161 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+@theme {
+  --color-navy-deep: #0A1628;
+  --color-navy-medium: #142240;
+  --color-navy-light: #2A3B5B;
+  --color-sunset-orange: #F5A623;
+  --color-sunset-amber: #FF8C42;
+  --color-ocean-teal: #4ECDC4;
+  --color-sky-blue: #7EB8DA;
+  --color-pearl: #F8FAFC;
+  --color-warm-gray: #94A3B8;
+  
+  --font-family-display: 'Playfair Display', serif;
+  --font-family-body: 'Source Sans 3', sans-serif;
+  --font-family-ui: 'Inter', sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-navy-deep);
+  color: var(--color-pearl);
+  font-family: var(--font-family-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: rgb(245 166 35 / 0.3);
+  color: var(--color-pearl);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: var(--color-navy-medium);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-navy-light);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-warm-gray);
+}
+
+/* Date inputs styling */
+input[type="date"] {
+  color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(to bottom right, var(--color-sunset-orange), var(--color-sunset-amber));
+  color: var(--color-navy-deep);
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(to bottom right, var(--color-sunset-amber), var(--color-sunset-orange));
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  background-color: var(--color-navy-light);
+  color: var(--color-pearl);
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-navy-medium);
+}
+
+.card {
+  background-color: var(--color-navy-medium);
+  border-radius: 1rem;
+  border: 1px solid var(--color-navy-light);
+  overflow: hidden;
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background-color: var(--color-navy-light);
+  border: 1px solid var(--color-navy-light);
+  color: var(--color-pearl);
+  transition: all 0.3s;
+}
+
+.input::placeholder {
+  color: var(--color-warm-gray);
+}
+
+.input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-sunset-orange);
+  border-color: transparent;
+}
+
+/* Utility classes */
+.text-sunset-orange { color: var(--color-sunset-orange); }
+.text-sunset-amber { color: var(--color-sunset-amber); }
+.text-pearl { color: var(--color-pearl); }
+.text-warm-gray { color: var(--color-warm-gray); }
+.text-navy-deep { color: var(--color-navy-deep); }
+
+.bg-navy-deep { background-color: var(--color-navy-deep); }
+.bg-navy-medium { background-color: var(--color-navy-medium); }
+.bg-navy-light { background-color: var(--color-navy-light); }
+.bg-sunset-orange { background-color: var(--color-sunset-orange); }
+.bg-sunset-amber { background-color: var(--color-sunset-amber); }
+
+.border-navy-light { border-color: var(--color-navy-light); }
+.border-sunset-orange { border-color: var(--color-sunset-orange); }
+
+.font-display { font-family: var(--font-family-display); }
+.font-body { font-family: var(--font-family-body); }
+
+.hover\:text-sunset-orange:hover { color: var(--color-sunset-orange); }
+.hover\:bg-sunset-orange:hover { background-color: var(--color-sunset-orange); }
+.hover\:bg-sunset-amber:hover { background-color: var(--color-sunset-amber); }
+.hover\:bg-navy-light:hover { background-color: var(--color-navy-light); }
+.hover\:bg-navy-medium:hover { background-color: var(--color-navy-medium); }
+
+.focus\:ring-sunset-orange:focus { --tw-ring-color: var(--color-sunset-orange); }
+
+.from-navy-deep { --tw-gradient-from: var(--color-navy-deep); }
+.via-navy-medium { --tw-gradient-via: var(--color-navy-medium); }
+.to-navy-deep { --tw-gradient-to: var(--color-navy-deep); }
+.from-sunset-orange { --tw-gradient-from: var(--color-sunset-orange); }
+.to-sunset-amber { --tw-gradient-to: var(--color-sunset-amber); }
