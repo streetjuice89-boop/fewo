@@ -1,0 +1,128 @@
+{
+  "common": {
+    "appName": "VoyageNest",
+    "tagline": "RENT. RELAX. EXPLORE.",
+    "loading": "Laden...",
+    "error": "Ein Fehler ist aufgetreten",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "search": "Suchen",
+    "filter": "Filter",
+    "reset": "Zurücksetzen",
+    "viewAll": "Alle ansehen",
+    "readMore": "Mehr erfahren",
+    "perNight": "pro Nacht",
+    "guests": "Gäste",
+    "bedrooms": "Schlafzimmer",
+    "bathrooms": "Badezimmer"
+  },
+  "nav": {
+    "home": "Startseite",
+    "properties": "Ferienwohnungen",
+    "about": "Über uns",
+    "contact": "Kontakt",
+    "login": "Anmelden",
+    "register": "Registrieren",
+    "logout": "Abmelden",
+    "myBookings": "Meine Buchungen",
+    "myAccount": "Mein Konto"
+  },
+  "hero": {
+    "title": "Finden Sie Ihr perfektes Urlaubszuhause",
+    "subtitle": "Entdecken Sie handverlesene Ferienwohnungen an den schönsten Orten Europas",
+    "searchPlaceholder": "Wohin soll die Reise gehen?",
+    "checkIn": "Anreise",
+    "checkOut": "Abreise",
+    "guestsLabel": "Gäste",
+    "searchButton": "Suchen"
+  },
+  "properties": {
+    "title": "Unsere Ferienwohnungen",
+    "subtitle": "Entdecken Sie einzigartige Unterkünfte",
+    "featured": "Empfohlene Unterkünfte",
+    "noResults": "Keine Unterkünfte gefunden",
+    "filters": {
+      "country": "Land",
+      "category": "Kategorie",
+      "priceRange": "Preisbereich",
+      "minGuests": "Min. Gäste",
+      "allCountries": "Alle Länder",
+      "allCategories": "Alle Kategorien"
+    },
+    "details": {
+      "description": "Beschreibung",
+      "amenities": "Ausstattung",
+      "location": "Lage",
+      "availability": "Verfügbarkeit",
+      "reviews": "Bewertungen"
+    }
+  },
+  "booking": {
+    "title": "Buchung",
+    "selectDates": "Wählen Sie Ihre Daten",
+    "summary": "Buchungsübersicht",
+    "nights": "Nächte",
+    "totalPrice": "Gesamtpreis",
+    "bookNow": "Jetzt buchen",
+    "confirmBooking": "Buchung bestätigen",
+    "success": "Buchung erfolgreich!",
+    "successMessage": "Ihre Buchung wurde erfolgreich erstellt. Sie erhalten eine Bestätigung per E-Mail.",
+    "guestInfo": "Gästeinformationen",
+    "notes": "Anmerkungen",
+    "notesPlaceholder": "Besondere Wünsche oder Anmerkungen..."
+  },
+  "auth": {
+    "login": "Anmelden",
+    "register": "Registrieren",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "confirmPassword": "Passwort bestätigen",
+    "firstName": "Vorname",
+    "lastName": "Nachname",
+    "phone": "Telefon",
+    "forgotPassword": "Passwort vergessen?",
+    "noAccount": "Noch kein Konto?",
+    "hasAccount": "Bereits ein Konto?",
+    "loginSuccess": "Erfolgreich angemeldet!",
+    "registerSuccess": "Konto erfolgreich erstellt!",
+    "logoutSuccess": "Erfolgreich abgemeldet"
+  },
+  "account": {
+    "title": "Mein Konto",
+    "profile": "Profil",
+    "bookings": "Meine Buchungen",
+    "settings": "Einstellungen",
+    "noBookings": "Sie haben noch keine Buchungen",
+    "bookingStatus": {
+      "pending": "Ausstehend",
+      "confirmed": "Bestätigt",
+      "cancelled": "Storniert",
+      "completed": "Abgeschlossen"
+    }
+  },
+  "chat": {
+    "title": "Live-Chat",
+    "placeholder": "Nachricht eingeben...",
+    "send": "Senden",
+    "online": "Online",
+    "offline": "Offline",
+    "connecting": "Verbinden..."
+  },
+  "footer": {
+    "company": "Unternehmen",
+    "aboutUs": "Über uns",
+    "careers": "Karriere",
+    "contact": "Kontakt",
+    "legal": "Rechtliches",
+    "privacy": "Datenschutz",
+    "terms": "AGB",
+    "imprint": "Impressum",
+    "support": "Support",
+    "faq": "FAQ",
+    "helpCenter": "Hilfe-Center",
+    "copyright": "© 2024 VoyageNest. Alle Rechte vorbehalten."
+  }
+}
+

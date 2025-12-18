@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-navy-deep text-pearl font-body antialiased;
+  }
+
+  ::selection {
+    @apply bg-sunset/30 text-pearl;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-navy-medium;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-navy-light rounded-full hover:bg-warm-gray;
+  }
+}
+
+@layer components {
+  /* Hero gradient overlay */
+  .hero-gradient {
+    background: linear-gradient(
+      135deg,
+      rgba(10, 22, 40, 0.95) 0%,
+      rgba(20, 34, 64, 0.85) 50%,
+      rgba(10, 22, 40, 0.9) 100%
+    );
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover;
+  }
+
+  /* Link hover effect */
+  .link-hover {
+    @apply relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-sunset after:transition-all after:duration-300 hover:after:w-full;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-sunset bg-clip-text text-transparent;
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply bg-navy-medium/80 backdrop-blur-md;
+  }
+
+  /* Property card image overlay */
+  .property-image-overlay {
+    @apply absolute inset-0 bg-gradient-to-t from-navy-deep/80 via-transparent to-transparent;
+  }
+}
+
+@layer utilities {
+  /* Animation delay utilities */
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+  .animation-delay-500 {
+    animation-delay: 500ms;
+  }
+
+  /* Hide scrollbar */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
