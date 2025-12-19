@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\CountryController;
 use App\Http\Controllers\Api\AirbnbController;
 use App\Http\Controllers\Api\SystemLogController;
+use App\Http\Controllers\Api\AmenityController;
 
 /*
 |--------------------------------------------------------------------------
@@ -93,6 +94,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/airbnb', [AirbnbController::class, 'index']);
         Route::get('/airbnb/{id}', [AirbnbController::class, 'show']);
         Route::post('/airbnb/grab', [AirbnbController::class, 'grab']);
+        Route::put('/airbnb/{id}', [AirbnbController::class, 'update']);
         Route::post('/airbnb/{id}/sync', [AirbnbController::class, 'sync']);
         Route::post('/airbnb/{id}/link', [AirbnbController::class, 'link']);
         Route::post('/airbnb/{id}/unlink', [AirbnbController::class, 'unlink']);
@@ -102,6 +104,16 @@ Route::middleware('auth:sanctum')->group(function () {
         // System Logs
         Route::get('/logs', [SystemLogController::class, 'index']);
         Route::get('/logs/statistics', [SystemLogController::class, 'statistics']);
+
+        // Amenities Management
+        Route::get('/amenities', [AmenityController::class, 'index']);
+        Route::get('/amenities/categories', [AmenityController::class, 'categories']);
+        Route::post('/amenities', [AmenityController::class, 'store']);
+        Route::post('/amenities/bulk', [AmenityController::class, 'bulkStore']);
+        Route::post('/amenities/import-from-listings', [AmenityController::class, 'importFromListings']);
+        Route::put('/amenities/{amenity}', [AmenityController::class, 'update']);
+        Route::patch('/amenities/{amenity}/toggle', [AmenityController::class, 'toggleActive']);
+        Route::delete('/amenities/{amenity}', [AmenityController::class, 'destroy']);
     });
 });
 

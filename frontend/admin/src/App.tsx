@@ -10,6 +10,7 @@ import BookingsPage from './pages/BookingsPage';
 import CustomersPage from './pages/CustomersPage';
 import ChatPage from './pages/ChatPage';
 import AirbnbPage from './pages/AirbnbPage';
+import AmenitiesPage from './pages/AmenitiesPage';
 import LogsPage from './pages/LogsPage';
 import { useAuthStore } from './store/auth';
 
@@ -52,6 +53,7 @@ function App() {
             <Route path="customers" element={<CustomersPage />} />
             <Route path="chat" element={<ChatPage />} />
             <Route path="airbnb" element={<AirbnbPage />} />
+            <Route path="amenities" element={<AmenitiesPage />} />
             <Route path="logs" element={<LogsPage />} />
           </Route>
         </Routes>

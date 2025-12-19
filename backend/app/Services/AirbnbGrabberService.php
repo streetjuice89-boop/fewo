@@ -9,12 +9,21 @@ use Illuminate\Support\Str;
 class AirbnbGrabberService
 {
     private array $defaultHeaders = [
-        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language' => 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
+        'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language' => 'de-DE,de;q=0.9,en;q=0.8',
         'Accept-Encoding' => 'gzip, deflate, br',
         'Connection' => 'keep-alive',
-        'Cache-Control' => 'max-age=0',
+        'Cache-Control' => 'no-cache',
+        'Pragma' => 'no-cache',
+        'Sec-Ch-Ua' => '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+        'Sec-Ch-Ua-Mobile' => '?0',
+        'Sec-Ch-Ua-Platform' => '"macOS"',
+        'Sec-Fetch-Dest' => 'document',
+        'Sec-Fetch-Mode' => 'navigate',
+        'Sec-Fetch-Site' => 'none',
+        'Sec-Fetch-User' => '?1',
+        'Upgrade-Insecure-Requests' => '1',
     ];
 
     /**
@@ -146,16 +155,37 @@ class AirbnbGrabberService
         // Fallback: Extract from meta tags
         $data = $this->parseMetaTags($html, $data);
 
-        // Extract images from the page
-        $data['images'] = $this->extractImages($html);
+        // Extract ALL data from embedded JSON (description, amenities, images)
+        $this->extractAllDataFromJson($html, $data);
 
-        // Extract title if not found
+        // Extract ALL images from embedded JSON data first (contains all images)
+        $allImages = $this->extractAllImagesFromJson($html);
+        
+        // Fallback to HTML extraction if JSON extraction fails
+        if (empty($allImages)) {
+            $allImages = $this->extractImages($html);
+        }
+        
+        $data['images'] = $allImages;
+
+        // Extract title from JSON data first (more reliable)
+        $this->extractTitleFromJson($html, $data);
+        
+        // Fallback: Extract title from HTML title tag
         if (!$data['title']) {
             if (preg_match('#<title[^>]*>([^<]+)</title>#i', $html, $matches)) {
                 $title = html_entity_decode(trim($matches[1]));
                 // Remove " - Airbnb" suffix
                 $data['title'] = preg_replace('#\s*[-–]\s*Airbnb.*$#i', '', $title);
             }
+        }
+        
+        // Make sure title is not in description (remove if duplicate)
+        if ($data['title'] && $data['description']) {
+            // If description starts with the title, remove it
+            $titleEscaped = preg_quote($data['title'], '#');
+            $data['description'] = preg_replace('#^' . $titleEscaped . '\s*\n*#iu', '', $data['description']);
+            $data['description'] = trim($data['description']);
         }
 
         // Extract price from various patterns
@@ -298,38 +328,512 @@ class AirbnbGrabberService
     }
 
     /**
-     * Extract images from HTML
+     * Extract title from JSON data
+     */
+    private function extractTitleFromJson(string $html, array &$data): void
+    {
+        if ($data['title']) {
+            return; // Already have a title
+        }
+
+        // Pattern 1: Look for listing name/title in JSON
+        $titlePatterns = [
+            '#"listingTitle"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"#',
+            '#"name"\s*:\s*"((?:[^"\\\\]|\\\\.){10,100})"#',
+            '#"title"\s*:\s*"((?:[^"\\\\]|\\\\.){10,100})"#',
+            '#"listing"\s*:\s*\{[^}]*"name"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"#s',
+            '#"pdpListing"\s*:\s*\{[^}]*"name"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"#s',
+        ];
+
+        foreach ($titlePatterns as $pattern) {
+            if (preg_match($pattern, $html, $match)) {
+                $title = $this->decodeJsonString($match[1]);
+                // Must be a reasonable title (not too long, not a URL, not JSON)
+                if (strlen($title) >= 5 && strlen($title) <= 200 && 
+                    !preg_match('#^(https?://|{|\[)#', $title) &&
+                    !preg_match('#(Airbnb|airbnb\.com)#i', $title)) {
+                    $data['title'] = $title;
+                    Log::info("Extracted title: " . $title);
+                    return;
+                }
+            }
+        }
+
+        // Pattern 2: Look for og:title meta tag
+        if (preg_match('#<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)["\']#i', $html, $match)) {
+            $title = html_entity_decode(trim($match[1]));
+            // Clean up - remove " - Airbnb" suffix
+            $title = preg_replace('#\s*[-–|·]\s*Airbnb.*$#i', '', $title);
+            if (strlen($title) >= 5 && strlen($title) <= 200) {
+                $data['title'] = $title;
+                return;
+            }
+        }
+    }
+
+    /**
+     * Extract ALL data (description, amenities) from Airbnb's embedded JSON
+     */
+    private function extractAllDataFromJson(string $html, array &$data): void
+    {
+        // ========== EXTRACT FULL DESCRIPTION ==========
+        
+        $allDescriptions = [];
+        
+        // Pattern 1: Look for sectioned description items (this contains the FULL text)
+        // Format: "sectionedDescription":[{"title":"...","htmlText":"FULL TEXT HERE"}]
+        if (preg_match_all('#"htmlText"\s*:\s*"((?:[^"\\\\]|\\\\.)*)+"#s', $html, $matches)) {
+            foreach ($matches[1] as $text) {
+                $decoded = $this->decodeJsonString($text);
+                if (strlen($decoded) > 50) {
+                    $allDescriptions[] = $decoded;
+                }
+            }
+        }
+
+        // Pattern 2: Look for description with "value" key
+        if (preg_match_all('#"(?:description|summary|aboutThisSpace|theSpace|guestAccess|interaction|otherThingsToNote|neighborhood|transit|houseRules)"\s*:\s*\{[^}]*"value"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"#s', $html, $matches)) {
+            foreach ($matches[1] as $text) {
+                $decoded = $this->decodeJsonString($text);
+                if (strlen($decoded) > 30) {
+                    $allDescriptions[] = $decoded;
+                }
+            }
+        }
+
+        // Pattern 3: Look for descriptionItems array
+        if (preg_match('#"descriptionItems"\s*:\s*\[(.*?)\]#s', $html, $match)) {
+            if (preg_match_all('#"html"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"#s', $match[1], $items)) {
+                foreach ($items[1] as $text) {
+                    $decoded = $this->decodeJsonString($text);
+                    if (strlen($decoded) > 30) {
+                        $allDescriptions[] = $decoded;
+                    }
+                }
+            }
+        }
+
+        // Pattern 4: Look for pdp_listing_detail data
+        if (preg_match('#"sectioned_description"\s*:\s*\{(.*?)\}\s*,\s*"#s', $html, $match)) {
+            $sectionData = $match[1];
+            // Extract all text values
+            if (preg_match_all('#"(?:description|summary|space|access|interaction|notes|neighborhood|transit|house_rules)"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"#s', $sectionData, $items)) {
+                foreach ($items[1] as $text) {
+                    $decoded = $this->decodeJsonString($text);
+                    if (strlen($decoded) > 30) {
+                        $allDescriptions[] = $decoded;
+                    }
+                }
+            }
+        }
+
+        // Pattern 5: Look for listing description in bootstrapData or similar
+        if (preg_match_all('#"(?:listing_description|description_summary|space_description|guest_access|interaction_with_guests|other_notes)"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"#s', $html, $matches)) {
+            foreach ($matches[1] as $text) {
+                $decoded = $this->decodeJsonString($text);
+                if (strlen($decoded) > 30) {
+                    $allDescriptions[] = $decoded;
+                }
+            }
+        }
+
+        // Pattern 6: Direct long description strings
+        if (preg_match_all('#"description"\s*:\s*"((?:[^"\\\\]|\\\\.){"100,"})"#s', $html, $matches)) {
+            foreach ($matches[1] as $text) {
+                $decoded = $this->decodeJsonString($text);
+                if (strlen($decoded) > 100) {
+                    $allDescriptions[] = $decoded;
+                }
+            }
+        }
+
+        // Combine all descriptions, removing duplicates
+        $allDescriptions = array_unique($allDescriptions);
+        
+        // Sort by length (longest first) and combine
+        usort($allDescriptions, fn($a, $b) => strlen($b) - strlen($a));
+        
+        // Build final description from unique sections
+        $finalDescription = '';
+        $usedTexts = [];
+        
+        foreach ($allDescriptions as $desc) {
+            // Check if this text is not a substring of already added text
+            $isDuplicate = false;
+            foreach ($usedTexts as $used) {
+                if (stripos($used, $desc) !== false || stripos($desc, $used) !== false) {
+                    $isDuplicate = true;
+                    break;
+                }
+            }
+            
+            if (!$isDuplicate && strlen($desc) > 30) {
+                $finalDescription .= $desc . "\n\n";
+                $usedTexts[] = $desc;
+            }
+        }
+        
+        $finalDescription = trim($finalDescription);
+        
+        if (strlen($finalDescription) > strlen($data['description'] ?? '')) {
+            $data['description'] = $finalDescription;
+            Log::info("Extracted description with " . strlen($finalDescription) . " characters");
+        }
+
+        // Also try the sectioned description extraction
+        $sectionedDesc = $this->extractSectionedDescription($html);
+        if ($sectionedDesc && strlen($sectionedDesc) > strlen($data['description'] ?? '')) {
+            $data['description'] = $sectionedDesc;
+        }
+
+        // ========== EXTRACT ALL AMENITIES ==========
+        
+        // Pattern 1: Look for amenities/amenityGroups in JSON
+        $amenities = [];
+        
+        // Find amenityGroups which contains ALL amenities
+        if (preg_match('#"amenityGroups"\s*:\s*(\[.*?\])\s*[,}]#s', $html, $match)) {
+            $amenitiesJson = $match[1];
+            // Extract all amenity titles/names
+            if (preg_match_all('#"title"\s*:\s*"([^"]+)"#', $amenitiesJson, $titles)) {
+                $amenities = array_merge($amenities, $titles[1]);
+            }
+        }
+
+        // Pattern 2: Look for previewAmenities
+        if (preg_match('#"previewAmenities"\s*:\s*\[(.*?)\]#s', $html, $match)) {
+            if (preg_match_all('#"title"\s*:\s*"([^"]+)"#', $match[1], $titles)) {
+                $amenities = array_merge($amenities, $titles[1]);
+            }
+        }
+
+        // Pattern 3: Look for listingAmenities
+        if (preg_match('#"listingAmenities"\s*:\s*\[(.*?)\]#s', $html, $match)) {
+            if (preg_match_all('#"name"\s*:\s*"([^"]+)"#', $match[1], $names)) {
+                $amenities = array_merge($amenities, $names[1]);
+            }
+            if (preg_match_all('#"title"\s*:\s*"([^"]+)"#', $match[1], $titles)) {
+                $amenities = array_merge($amenities, $titles[1]);
+            }
+        }
+
+        // Pattern 4: Look for seeAllAmenitiesGroups (full list)
+        if (preg_match('#"seeAllAmenitiesGroups"\s*:\s*(\[.*?\])\s*[,}]#s', $html, $match)) {
+            $amenitiesJson = $match[1];
+            if (preg_match_all('#"title"\s*:\s*"([^"]+)"#', $amenitiesJson, $titles)) {
+                $amenities = array_merge($amenities, $titles[1]);
+            }
+        }
+
+        // Pattern 5: Generic - find all amenity-like entries
+        if (preg_match_all('#"amenities"\s*:\s*\[([^\]]+)\]#s', $html, $matches)) {
+            foreach ($matches[1] as $amenityBlock) {
+                if (preg_match_all('#"([^"]+)"#', $amenityBlock, $items)) {
+                    foreach ($items[1] as $item) {
+                        // Filter out non-amenity strings
+                        if (strlen($item) > 2 && strlen($item) < 100 && !preg_match('#^(https?://|[0-9]+$|true|false|null)#i', $item)) {
+                            $amenities[] = $item;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Clean and decode amenities
+        $amenities = array_map(function($a) {
+            return $this->decodeJsonString($a);
+        }, $amenities);
+
+        // Remove duplicates, empty values, and invalid entries
+        $amenities = array_filter(array_unique($amenities), function($a) {
+            // Must be reasonable length
+            if (strlen($a) < 2 || strlen($a) > 100) {
+                return false;
+            }
+            
+            // Filter out internal Airbnb fields and system values
+            $invalidPatterns = [
+                '/^__typename$/i',
+                '/^(title|icon|available|subtitle|id|isPresent)$/i',
+                '/^SYSTEM_/i',
+                '/^Amenity$/i',
+                '/^[A-Z_]{5,}$/',  // All caps with underscores (system keys)
+                '/^\d+$/',         // Numbers only
+                '/^(true|false|null)$/i',
+                '/^https?:\/\//i', // URLs
+            ];
+            
+            foreach ($invalidPatterns as $pattern) {
+                if (preg_match($pattern, $a)) {
+                    return false;
+                }
+            }
+            
+            return true;
+        });
+
+        if (count($amenities) > count($data['amenities'] ?? [])) {
+            $data['amenities'] = array_values($amenities);
+            Log::info("Extracted " . count($amenities) . " amenities from JSON");
+        }
+    }
+
+    /**
+     * Extract sectioned description from Airbnb page
+     */
+    private function extractSectionedDescription(string $html): ?string
+    {
+        $sections = [];
+        
+        // Pattern 1: Look for sectionedDescription array with title and htmlText
+        if (preg_match('#"sectionedDescription"\s*:\s*\[(.*?)\]\s*[,}]#s', $html, $match)) {
+            $sectionsJson = '[' . $match[1] . ']';
+            // Extract each section with title and htmlText
+            if (preg_match_all('#\{[^{}]*"title"\s*:\s*"([^"]*)"[^{}]*"htmlText"\s*:\s*"((?:[^"\\\\]|\\\\.)*)+"[^{}]*\}#s', $match[1], $items, PREG_SET_ORDER)) {
+                foreach ($items as $item) {
+                    $title = $this->decodeJsonString($item[1]);
+                    $text = $this->decodeJsonString($item[2]);
+                    if (strlen($text) > 10) {
+                        $sectionTitle = $title ?: 'Beschreibung';
+                        $sections[$sectionTitle] = $text;
+                    }
+                }
+            }
+        }
+
+        // Pattern 2: Look for individual description sections
+        $sectionPatterns = [
+            'Über diese Unterkunft' => '#"(?:aboutThisSpace|descriptionSummary)"\s*:\s*\{[^}]*"(?:htmlText|value)"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"#s',
+            'Die Unterkunft' => '#"(?:theSpace|spaceDescription)"\s*:\s*\{[^}]*"(?:htmlText|value)"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"#s',
+            'Zugang für Gäste' => '#"(?:guestAccess|accessDescription)"\s*:\s*\{[^}]*"(?:htmlText|value)"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"#s',
+            'Während deines Aufenthaltes' => '#"(?:interaction|interactionDescription)"\s*:\s*\{[^}]*"(?:htmlText|value)"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"#s',
+            'Weitere wichtige Hinweise' => '#"(?:otherThingsToNote|otherDescription)"\s*:\s*\{[^}]*"(?:htmlText|value)"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"#s',
+            'Die Nachbarschaft' => '#"(?:neighborhood|neighborhoodDescription)"\s*:\s*\{[^}]*"(?:htmlText|value)"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"#s',
+            'Anreise' => '#"(?:transit|transitDescription)"\s*:\s*\{[^}]*"(?:htmlText|value)"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"#s',
+            'Hausregeln' => '#"(?:houseRules|houseRulesDescription)"\s*:\s*\{[^}]*"(?:htmlText|value)"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"#s',
+        ];
+
+        foreach ($sectionPatterns as $title => $pattern) {
+            if (!isset($sections[$title]) && preg_match($pattern, $html, $match)) {
+                $text = $this->decodeJsonString($match[1]);
+                if (strlen($text) > 10) {
+                    $sections[$title] = $text;
+                }
+            }
+        }
+
+        // Pattern 3: Look for description_sections or similar arrays
+        if (preg_match('#"description_sections"\s*:\s*\[(.*?)\]#s', $html, $match)) {
+            if (preg_match_all('#\{[^{}]*"title"\s*:\s*"([^"]*)"[^{}]*"body"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"[^{}]*\}#s', $match[1], $items, PREG_SET_ORDER)) {
+                foreach ($items as $item) {
+                    $title = $this->decodeJsonString($item[1]) ?: 'Info';
+                    $text = $this->decodeJsonString($item[2]);
+                    if (strlen($text) > 10 && !isset($sections[$title])) {
+                        $sections[$title] = $text;
+                    }
+                }
+            }
+        }
+
+        // Build final description with section headers
+        if (!empty($sections)) {
+            $parts = [];
+            foreach ($sections as $title => $content) {
+                if ($title && $title !== 'Beschreibung') {
+                    $parts[] = "【{$title}】\n{$content}";
+                } else {
+                    $parts[] = $content;
+                }
+            }
+            return trim(implode("\n\n", $parts));
+        }
+
+        return null;
+    }
+
+    /**
+     * Decode JSON escaped string
+     */
+    private function decodeJsonString(string $str): string
+    {
+        // Decode unicode escapes
+        $str = preg_replace_callback('#\\\\u([0-9a-fA-F]{4})#', function($m) {
+            return mb_convert_encoding(pack('H*', $m[1]), 'UTF-8', 'UCS-2BE');
+        }, $str);
+        
+        // Decode other escapes
+        $str = str_replace(['\\n', '\\r', '\\t', '\\"', '\\\\'], ["\n", "\r", "\t", '"', '\\'], $str);
+        
+        // Strip HTML tags but preserve line breaks
+        $str = preg_replace('#<br\s*/?>#i', "\n", $str);
+        $str = strip_tags($str);
+        
+        // Clean up whitespace
+        $str = preg_replace('#\n{3,}#', "\n\n", $str);
+        
+        return trim($str);
+    }
+
+    /**
+     * Extract ALL images from Airbnb's embedded JSON data
+     * This gets ALL images, not just the ones visible in HTML
+     */
+    private function extractAllImagesFromJson(string $html): array
+    {
+        $images = [];
+
+        // Airbnb embeds listing data in script tags - look for all of them
+        // Pattern 1: Look for photos array in JSON
+        if (preg_match_all('#"photos"\s*:\s*\[(.*?)\]#s', $html, $matches)) {
+            foreach ($matches[1] as $photosJson) {
+                // Extract URLs from the photos array
+                if (preg_match_all('#"(https://a0\.muscache\.com/im/pictures/[^"]+)"#', $photosJson, $urlMatches)) {
+                    $images = array_merge($images, $urlMatches[1]);
+                }
+            }
+        }
+
+        // Pattern 2: Look for pictureUrl, baseUrl, large, xl patterns
+        $urlPatterns = [
+            '#"(?:pictureUrl|baseUrl|large|xl|original|scrim_color)"\s*:\s*"(https://a0\.muscache\.com/im/pictures/[^"]+)"#',
+            '#"(?:url|picture|image)"\s*:\s*"(https://a0\.muscache\.com/im/pictures/[^"]+)"#',
+        ];
+
+        foreach ($urlPatterns as $pattern) {
+            if (preg_match_all($pattern, $html, $matches)) {
+                $images = array_merge($images, $matches[1]);
+            }
+        }
+
+        // Pattern 3: Look for the __NEXT_DATA__ script which often contains all data
+        if (preg_match('#<script[^>]*id="__NEXT_DATA__"[^>]*>(.*?)</script>#s', $html, $match)) {
+            $nextData = $match[1];
+            // Extract all muscache image URLs from this block
+            if (preg_match_all('#https://a0\.muscache\.com/im/pictures/[^"\\\\]+#', $nextData, $urlMatches)) {
+                $images = array_merge($images, $urlMatches[0]);
+            }
+        }
+
+        // Pattern 4: Look for data-deferred-state scripts
+        if (preg_match_all('#<script[^>]*data-deferred-state[^>]*>(.*?)</script>#s', $html, $matches)) {
+            foreach ($matches[1] as $scriptContent) {
+                if (preg_match_all('#https://a0\.muscache\.com/im/pictures/[^"\\\\]+#', $scriptContent, $urlMatches)) {
+                    $images = array_merge($images, $urlMatches[0]);
+                }
+            }
+        }
+
+        // Pattern 5: Generic - find ALL muscache image URLs in the entire HTML
+        if (preg_match_all('#https://a0\.muscache\.com/im/pictures/(?:miso|hosting|prohost-api|airbnb-platform-assets)/[^"\'>\s\\\\]+#', $html, $matches)) {
+            $images = array_merge($images, $matches[0]);
+        }
+
+        // Clean up and filter images
+        $images = array_unique($images);
+        
+        // Filter out profile pictures, thumbnails, icons
+        $images = array_filter($images, function($url) {
+            // Skip user/profile pictures (including AirbnbPlatformAssets-UserProfile)
+            if (preg_match('#/(user|users|avatar|avatars|profile|User|UserProfile)/|user_pic|profile_pic|AirbnbPlatformAssets-UserProfile#i', $url)) {
+                return false;
+            }
+            // Skip small thumbnails and icons
+            if (preg_match('#(small|thumb|icon|32x32|64x64|50x50|thumbnail|_t\.|_s\.)#i', $url)) {
+                return false;
+            }
+            // Skip amenity icons, logos, and platform assets (non-listing images)
+            if (preg_match('#/amenities/|/icons/|/logos/|/static/|AirbnbPlatformAssets-(?!Listing)#i', $url)) {
+                return false;
+            }
+            // Must be a proper image file
+            if (!preg_match('#\.(jpg|jpeg|png|webp)#i', $url)) {
+                return false;
+            }
+            return true;
+        });
+
+        // Upgrade all images to high quality
+        $images = array_map(function($url) {
+            // Clean URL and add high quality parameters
+            $url = preg_replace('#\?.*$#', '', $url); // Remove existing query string
+            // Request highest quality
+            return $url . '?im_w=1440&im_q=highq';
+        }, $images);
+
+        // Remove duplicates after URL normalization
+        $images = array_unique($images);
+
+        Log::info("Extracted " . count($images) . " images from JSON data");
+
+        return array_values($images);
+    }
+
+    /**
+     * Extract images from HTML - ONLY listing images, NO profile pictures (fallback)
      */
     private function extractImages(string $html): array
     {
         $images = [];
 
-        // Look for high-quality Airbnb image URLs
-        if (preg_match_all('#https://a0\.muscache\.com/im/pictures/[^"\'>\s]+#', $html, $matches)) {
+        // Look for high-quality Airbnb LISTING image URLs (miso = listing images)
+        // Pattern: https://a0.muscache.com/im/pictures/miso/Host-XXXXX/original/XXXXX.jpeg
+        if (preg_match_all('#https://a0\.muscache\.com/im/pictures/miso/[^"\'>\s]+#', $html, $matches)) {
             $images = array_merge($images, $matches[0]);
         }
 
-        // Also check for airbnb-hosted images
-        if (preg_match_all('#https://[^"\'>\s]*airbnb[^"\'>\s]*\.(jpg|jpeg|png|webp)[^"\'>\s]*#i', $html, $matches)) {
+        // Also look for hosting_id pattern (another listing image format)
+        // Pattern: https://a0.muscache.com/im/pictures/hosting/XXXXX/original/XXXXX.jpeg
+        if (preg_match_all('#https://a0\.muscache\.com/im/pictures/hosting/[^"\'>\s]+#', $html, $matches)) {
             $images = array_merge($images, $matches[0]);
         }
 
-        // Remove duplicates and limit
+        // Look for prohost pattern
+        if (preg_match_all('#https://a0\.muscache\.com/im/pictures/prohost-api/[^"\'>\s]+#', $html, $matches)) {
+            $images = array_merge($images, $matches[0]);
+        }
+
+        // Generic listing pictures (but NOT user/profile pictures)
+        if (preg_match_all('#https://a0\.muscache\.com/im/pictures/[a-f0-9-]{36}\.(jpg|jpeg|png|webp)[^"\'>\s]*#i', $html, $matches)) {
+            $images = array_merge($images, $matches[0]);
+        }
+
+        // Also check for airbnb-static images (room photos)
+        if (preg_match_all('#https://a0\.muscache\.com/pictures/[^"\'>\s]+\.(jpg|jpeg|png|webp)[^"\'>\s]*#i', $html, $matches)) {
+            $images = array_merge($images, $matches[0]);
+        }
+
+        // Remove duplicates
         $images = array_unique($images);
         
-        // Filter out thumbnails, get larger versions
+        // IMPORTANT: Filter out profile pictures and thumbnails
         $images = array_filter($images, function($url) {
-            // Skip small thumbnails
-            return !preg_match('#(small|thumb|icon|32x32|64x64|thumbnail)#i', $url);
+            // Skip user/profile pictures (including AirbnbPlatformAssets-UserProfile)
+            if (preg_match('#/(user|users|avatar|avatars|profile|User|UserProfile)/|user_pic|profile_pic|AirbnbPlatformAssets-UserProfile#i', $url)) {
+                return false;
+            }
+            // Skip small thumbnails and icons
+            if (preg_match('#(small|thumb|icon|32x32|64x64|50x50|thumbnail|_t\.|_s\.)#i', $url)) {
+                return false;
+            }
+            // Skip amenity icons, logos, and non-listing platform assets
+            if (preg_match('#/amenities/|/icons/|/logos/|AirbnbPlatformAssets-(?!Listing)#i', $url)) {
+                return false;
+            }
+            return true;
         });
 
-        // Upgrade image quality where possible
+        // Upgrade image quality - request high resolution
         $images = array_map(function($url) {
-            // Replace with higher resolution if possible
-            return preg_replace('#/im/pictures/([^/]+)/([^?]+)#', '/im/pictures/$1/$2?im_w=1200', $url);
+            // Remove existing size parameters and add high resolution
+            $url = preg_replace('#\?.*$#', '', $url); // Remove query string
+            return $url . '?im_w=1440&im_q=highq'; // High quality, 1440px width
         }, $images);
 
-        return array_values(array_slice($images, 0, 20));
+        // Remove duplicates again after URL modifications
+        $images = array_unique($images);
+
+        // Return ALL images (no limit)
+        return array_values($images);
     }
 
     /**
@@ -599,11 +1103,18 @@ class AirbnbGrabberService
             'currency' => 'EUR',
             'location' => $locations[array_rand($locations)],
             'images' => [
-                'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200',
-                'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200',
-                'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1200',
-                'https://images.unsplash.com/photo-1484154218962-a197022b25ba?w=1200',
-                'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=1200',
+                'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1440&q=80',
+                'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1440&q=80',
+                'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1440&q=80',
+                'https://images.unsplash.com/photo-1484154218962-a197022b25ba?w=1440&q=80',
+                'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=1440&q=80',
+                'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1440&q=80',
+                'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1440&q=80',
+                'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1440&q=80',
+                'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1440&q=80',
+                'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=1440&q=80',
+                'https://images.unsplash.com/photo-1600573472591-ee6981cf35a6?w=1440&q=80',
+                'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=1440&q=80',
             ],
             'amenities' => $selectedAmenities,
             'bedrooms' => rand(1, 4),

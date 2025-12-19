@@ -95,6 +95,17 @@ export const airbnbApi = {
   list: (params?: Record<string, unknown>) => api.get('/admin/airbnb', { params }),
   get: (id: string) => api.get(`/admin/airbnb/${id}`),
   grab: (url: string) => api.post('/admin/airbnb/grab', { url }),
+  update: (id: string, data: {
+    title?: string;
+    description?: string;
+    price?: number;
+    location?: string;
+    bedrooms?: number;
+    bathrooms?: number;
+    maxGuests?: number;
+    amenities?: string[];
+    images?: string[];
+  }) => api.put(`/admin/airbnb/${id}`, data),
   sync: (id: string) => api.post(`/admin/airbnb/${id}/sync`),
   link: (id: string, propertyId: number) =>
     api.post(`/admin/airbnb/${id}/link`, { propertyId }),
@@ -108,6 +119,22 @@ export const airbnbApi = {
 export const logsApi = {
   list: (params?: Record<string, unknown>) => api.get('/admin/logs', { params }),
   statistics: () => api.get('/admin/logs/statistics'),
+};
+
+// Amenities
+export const amenitiesApi = {
+  list: (params?: { active_only?: boolean; category?: string }) =>
+    api.get('/admin/amenities', { params }),
+  categories: () => api.get('/admin/amenities/categories'),
+  create: (data: { name: string; name_en?: string; icon?: string; category: string; active?: boolean; sort_order?: number }) =>
+    api.post('/admin/amenities', data),
+  bulkCreate: (amenities: Array<{ name: string; name_en?: string; icon?: string; category: string; active?: boolean; sort_order?: number }>) =>
+    api.post('/admin/amenities/bulk', { amenities }),
+  importFromListings: () => api.post('/admin/amenities/import-from-listings'),
+  update: (id: number, data: { name?: string; name_en?: string; icon?: string; category?: string; active?: boolean; sort_order?: number }) =>
+    api.put(`/admin/amenities/${id}`, data),
+  toggleActive: (id: number) => api.patch(`/admin/amenities/${id}/toggle`),
+  delete: (id: number) => api.delete(`/admin/amenities/${id}`),
 };
 
 export default api;

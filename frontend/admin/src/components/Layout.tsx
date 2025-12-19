@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Building2, Calendar, Users, MessageSquare, 
-  Link2, FileText, LogOut, Menu 
+  Link2, FileText, LogOut, Menu, Package
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '../store/auth';
@@ -13,6 +13,7 @@ const navigation = [
   { name: 'Kunden', href: '/customers', icon: Users },
   { name: 'Chat', href: '/chat', icon: MessageSquare },
   { name: 'Airbnb', href: '/airbnb', icon: Link2 },
+  { name: 'Ausstattungen', href: '/amenities', icon: Package },
   { name: 'Logs', href: '/logs', icon: FileText },
 ];
 

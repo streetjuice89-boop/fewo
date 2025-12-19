@@ -135,6 +135,68 @@ class AirbnbController extends Controller
     }
 
     /**
+     * Update listing manually (description, amenities, images, etc.)
+     */
+    public function update(Request $request, string $id)
+    {
+        $listing = AirbnbListing::findOrFail($id);
+
+        $request->validate([
+            'title' => 'sometimes|string|max:255',
+            'description' => 'sometimes|string',
+            'price' => 'sometimes|numeric|min:0',
+            'location' => 'sometimes|string|max:255',
+            'bedrooms' => 'sometimes|integer|min:0',
+            'bathrooms' => 'sometimes|integer|min:0',
+            'maxGuests' => 'sometimes|integer|min:1',
+            'amenities' => 'sometimes|array',
+            'amenities.*' => 'string',
+            'images' => 'sometimes|array',
+            'images.*' => 'string|url',
+        ]);
+
+        $updateData = [];
+
+        if ($request->has('title')) {
+            $updateData['title'] = $request->title;
+        }
+        if ($request->has('description')) {
+            $updateData['description'] = $request->description;
+        }
+        if ($request->has('price')) {
+            $updateData['price'] = $request->price;
+        }
+        if ($request->has('location')) {
+            $updateData['location'] = $request->location;
+        }
+        if ($request->has('bedrooms')) {
+            $updateData['bedrooms'] = $request->bedrooms;
+        }
+        if ($request->has('bathrooms')) {
+            $updateData['bathrooms'] = $request->bathrooms;
+        }
+        if ($request->has('maxGuests')) {
+            $updateData['max_guests'] = $request->maxGuests;
+        }
+        if ($request->has('amenities')) {
+            $updateData['amenities'] = $request->amenities;
+        }
+        if ($request->has('images')) {
+            $updateData['images'] = $request->images;
+        }
+
+        if (!empty($updateData)) {
+            $listing->update($updateData);
+            
+            SystemLog::log('airbnb.update', 'AirbnbListing', $listing->id, [
+                'fields' => array_keys($updateData),
+            ]);
+        }
+
+        return response()->json($this->formatListing($listing->fresh()));
+    }
+
+    /**
      * Sync a listing
      */
     public function sync(string $id)
