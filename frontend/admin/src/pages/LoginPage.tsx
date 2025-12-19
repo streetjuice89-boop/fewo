@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Lock, ArrowRight, Shield } from 'lucide-react';
+import { User, Lock, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { authApi } from '../lib/api';
 import { useAuthStore } from '../store/auth';
@@ -58,7 +58,7 @@ export default function LoginPage() {
                 Benutzername
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray pointer-events-none" />
                 <input
                   id="username"
                   type="text"
@@ -76,7 +76,7 @@ export default function LoginPage() {
                 Passwort
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray pointer-events-none" />
                 <input
                   id="password"
                   type="password"

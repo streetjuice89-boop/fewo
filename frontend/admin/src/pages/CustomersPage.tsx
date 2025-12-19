@@ -25,7 +25,7 @@ export default function CustomersPage() {
 
       {/* Search */}
       <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray pointer-events-none" />
         <input
           type="text"
           placeholder="Namen oder E-Mail suchen..."
@@ -123,6 +123,7 @@ export default function CustomersPage() {
     </div>
   );
 }
+
 
 
 

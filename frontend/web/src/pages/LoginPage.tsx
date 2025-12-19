@@ -59,7 +59,7 @@ export default function LoginPage() {
                 Benutzername
               </label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray pointer-events-none" />
                 <input
                   id="username"
                   type="text"
@@ -77,7 +77,7 @@ export default function LoginPage() {
                 Passwort
               </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray pointer-events-none" />
                 <input
                   id="password"
                   type="password"

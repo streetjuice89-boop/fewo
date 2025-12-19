@@ -1,9 +1,9 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, Menu, X, MessageCircle } from 'lucide-react';
-import { useState } from 'react';
+import { Menu, X } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '../store/auth';
-import { useLanguageStore } from '../store/language';
+import { useLanguageStore, useTranslation } from '../store/language';
 import CookieBanner from './CookieBanner';
 import ChatWidget from './ChatWidget';
 import FlyingPlane from './FlyingPlane';
@@ -11,11 +11,24 @@ import FlyingPlane from './FlyingPlane';
 export default function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
   const { isAuthenticated, user, logout } = useAuthStore();
   const { language, setLanguage } = useLanguageStore();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const isHomePage = location.pathname === '/';
+
+  // Close language dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(event.target as Node)) {
+        setLangOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -39,46 +52,49 @@ export default function Layout() {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-8">
               <Link to="/" className="text-pearl hover:text-sunset-orange transition-colors">
-                Startseite
+                {t('home')}
               </Link>
               <Link to="/properties" className="text-pearl hover:text-sunset-orange transition-colors">
-                Ferienwohnungen
+                {t('properties')}
               </Link>
               <Link to="/contact" className="text-pearl hover:text-sunset-orange transition-colors">
-                Kontakt
+                {t('contact')}
               </Link>
             </nav>
 
             {/* Right Side */}
             <div className="hidden md:flex items-center gap-4">
               {/* Language Selector */}
-              <div className="relative">
+              <div className="relative" ref={langRef}>
                 <button 
                   onClick={() => setLangOpen(!langOpen)}
-                  className="flex items-center gap-2 text-pearl hover:text-sunset-orange transition-colors"
+                  className="flex items-center gap-2 text-pearl hover:text-sunset-orange transition-colors px-3 py-2 rounded-lg hover:bg-navy-light/50"
                 >
-                  <span className="text-lg">{language === 'de' ? '🇩🇪' : '🇬🇧'}</span>
-                  {language.toUpperCase()}
+                  <span className="text-xl">{language === 'de' ? '🇩🇪' : '🇬🇧'}</span>
+                  <span className="font-medium">{language.toUpperCase()}</span>
                 </button>
                 <AnimatePresence>
                   {langOpen && (
                     <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="absolute top-full right-0 mt-2 bg-navy-medium border border-navy-light rounded-lg overflow-hidden min-w-[120px]"
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full right-0 mt-2 bg-navy-medium border border-navy-light rounded-xl overflow-hidden min-w-[140px] shadow-xl z-[100]"
                     >
                       <button 
                         onClick={() => { setLanguage('de'); setLangOpen(false); }}
-                        className={`flex items-center gap-2 w-full px-4 py-2 text-left text-pearl hover:bg-navy-light ${language === 'de' ? 'bg-navy-light' : ''}`}
+                        className={`flex items-center gap-3 w-full px-4 py-3 text-left text-pearl hover:bg-sunset-orange/20 transition-colors ${language === 'de' ? 'bg-sunset-orange/10 text-sunset-orange' : ''}`}
                       >
-                        <span className="text-lg">🇩🇪</span> Deutsch
+                        <span className="text-xl">🇩🇪</span> 
+                        <span>Deutsch</span>
                       </button>
                       <button 
                         onClick={() => { setLanguage('en'); setLangOpen(false); }}
-                        className={`flex items-center gap-2 w-full px-4 py-2 text-left text-pearl hover:bg-navy-light ${language === 'en' ? 'bg-navy-light' : ''}`}
+                        className={`flex items-center gap-3 w-full px-4 py-3 text-left text-pearl hover:bg-sunset-orange/20 transition-colors ${language === 'en' ? 'bg-sunset-orange/10 text-sunset-orange' : ''}`}
                       >
-                        <span className="text-lg">🇬🇧</span> English
+                        <span className="text-xl">🇬🇧</span> 
+                        <span>English</span>
                       </button>
                     </motion.div>
                   )}
@@ -94,19 +110,19 @@ export default function Layout() {
                     onClick={handleLogout}
                     className="text-pearl hover:text-sunset-orange transition-colors"
                   >
-                    Abmelden
+                    {t('logout')}
                   </button>
                 </>
               ) : (
                 <>
                   <Link to="/login" className="text-pearl hover:text-sunset-orange transition-colors">
-                    Anmelden
+                    {t('login')}
                   </Link>
                   <Link 
                     to="/register" 
                     className="px-5 py-2 border border-sunset-orange text-sunset-orange rounded-full hover:bg-sunset-orange hover:text-navy-deep transition-all"
                   >
-                    Registrieren
+                    {t('register')}
                   </Link>
                 </>
               )}
@@ -137,21 +153,21 @@ export default function Layout() {
                   onClick={() => setMobileMenuOpen(false)}
                   className="block text-pearl hover:text-sunset-orange"
                 >
-                  Startseite
+                  {t('home')}
                 </Link>
                 <Link
                   to="/properties"
                   onClick={() => setMobileMenuOpen(false)}
                   className="block text-pearl hover:text-sunset-orange"
                 >
-                  Ferienwohnungen
+                  {t('properties')}
                 </Link>
                 <Link
                   to="/contact"
                   onClick={() => setMobileMenuOpen(false)}
                   className="block text-pearl hover:text-sunset-orange"
                 >
-                  Kontakt
+                  {t('contact')}
                 </Link>
                 <hr className="border-navy-light" />
                 {isAuthenticated ? (
@@ -161,7 +177,7 @@ export default function Layout() {
                       onClick={() => setMobileMenuOpen(false)}
                       className="block text-pearl"
                     >
-                      Mein Konto
+                      {t('myAccount')}
                     </Link>
                     <button
                       onClick={() => {
@@ -170,7 +186,7 @@ export default function Layout() {
                       }}
                       className="block text-pearl"
                     >
-                      Abmelden
+                      {t('logout')}
                     </button>
                   </>
                 ) : (
@@ -180,14 +196,14 @@ export default function Layout() {
                       onClick={() => setMobileMenuOpen(false)}
                       className="block text-pearl"
                     >
-                      Anmelden
+                      {t('login')}
                     </Link>
                     <Link
                       to="/register"
                       onClick={() => setMobileMenuOpen(false)}
                       className="block text-sunset-orange"
                     >
-                      Registrieren
+                      {t('register')}
                     </Link>
                   </>
                 )}
@@ -221,27 +237,27 @@ export default function Layout() {
                 </span>
               </div>
               <p className="text-warm-gray text-sm">
-                Entdecken Sie einzigartige Unterkünfte für Ihren perfekten Urlaub.
+                {t('footerDesc')}
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-pearl mb-4">Navigation</h4>
+              <h4 className="font-semibold text-pearl mb-4">{t('navigation')}</h4>
               <ul className="space-y-2 text-sm text-warm-gray">
-                <li><Link to="/" className="hover:text-sunset-orange transition-colors">Startseite</Link></li>
-                <li><Link to="/properties" className="hover:text-sunset-orange transition-colors">Ferienwohnungen</Link></li>
-                <li><Link to="/contact" className="hover:text-sunset-orange transition-colors">Kontakt</Link></li>
+                <li><Link to="/" className="hover:text-sunset-orange transition-colors">{t('home')}</Link></li>
+                <li><Link to="/properties" className="hover:text-sunset-orange transition-colors">{t('properties')}</Link></li>
+                <li><Link to="/contact" className="hover:text-sunset-orange transition-colors">{t('contact')}</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-pearl mb-4">Rechtliches</h4>
+              <h4 className="font-semibold text-pearl mb-4">{t('legal')}</h4>
               <ul className="space-y-2 text-sm text-warm-gray">
-                <li><Link to="/impressum" className="hover:text-sunset-orange transition-colors">Impressum</Link></li>
-                <li><Link to="/datenschutz" className="hover:text-sunset-orange transition-colors">Datenschutz</Link></li>
-                <li><Link to="/agb" className="hover:text-sunset-orange transition-colors">AGB</Link></li>
+                <li><Link to="/impressum" className="hover:text-sunset-orange transition-colors">{t('imprint')}</Link></li>
+                <li><Link to="/datenschutz" className="hover:text-sunset-orange transition-colors">{t('privacy')}</Link></li>
+                <li><Link to="/agb" className="hover:text-sunset-orange transition-colors">{t('terms')}</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-pearl mb-4">Kontakt</h4>
+              <h4 className="font-semibold text-pearl mb-4">{t('contact')}</h4>
               <ul className="space-y-2 text-sm text-warm-gray">
                 <li>info@voyagenest.com</li>
                 <li>+49 123 456 789</li>
@@ -249,7 +265,7 @@ export default function Layout() {
             </div>
           </div>
           <div className="border-t border-navy-light mt-8 pt-8 text-center text-sm text-warm-gray">
-            © {new Date().getFullYear()} VoyageNest. Alle Rechte vorbehalten.
+            © {new Date().getFullYear()} VoyageNest. {t('allRightsReserved')}
           </div>
         </div>
       </footer>

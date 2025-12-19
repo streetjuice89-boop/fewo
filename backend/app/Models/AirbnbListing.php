@@ -28,6 +28,9 @@ class AirbnbListing extends Model
         'sync_status',
         'property_id',
         'last_synced_at',
+        'property_type',
+        'host_name',
+        'host_is_superhost',
     ];
 
     protected $casts = [
@@ -59,6 +62,7 @@ class AirbnbListing extends Model
                $this->last_synced_at->diffInHours(now()) > 24;
     }
 }
+
 
 
 

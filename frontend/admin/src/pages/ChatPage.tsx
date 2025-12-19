@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { MessageSquare, User, Send, X, RefreshCw } from 'lucide-react';
+import { MessageSquare, User, Send, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { chatApi } from '../lib/api';
 
@@ -220,6 +220,7 @@ export default function ChatPage() {
     </div>
   );
 }
+
 
 
 

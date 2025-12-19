@@ -99,7 +99,7 @@ export default function RegisterPage() {
             <div>
               <label className="block text-sm text-warm-gray mb-2">Benutzername</label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray pointer-events-none" />
                 <input
                   type="text"
                   name="username"
@@ -115,7 +115,7 @@ export default function RegisterPage() {
             <div>
               <label className="block text-sm text-warm-gray mb-2">E-Mail (optional)</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray pointer-events-none" />
                 <input
                   type="email"
                   name="email"
@@ -130,7 +130,7 @@ export default function RegisterPage() {
             <div>
               <label className="block text-sm text-warm-gray mb-2">Telefon (optional)</label>
               <div className="relative">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray" />
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray pointer-events-none" />
                 <input
                   type="tel"
                   name="phone"
@@ -145,7 +145,7 @@ export default function RegisterPage() {
             <div>
               <label className="block text-sm text-warm-gray mb-2">Passwort</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray pointer-events-none" />
                 <input
                   type="password"
                   name="password"
@@ -162,7 +162,7 @@ export default function RegisterPage() {
             <div>
               <label className="block text-sm text-warm-gray mb-2">Passwort bestätigen</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray pointer-events-none" />
                 <input
                   type="password"
                   name="password_confirmation"

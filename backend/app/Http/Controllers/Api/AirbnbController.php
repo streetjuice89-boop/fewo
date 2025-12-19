@@ -72,7 +72,7 @@ class AirbnbController extends Controller
     public function grab(Request $request)
     {
         $request->validate([
-            'url' => 'required|url|regex:/airbnb\.(com|de|at|ch)/i',
+            'url' => ['required', 'url', 'regex:#airbnb\.(com|de|at|ch)#i'],
         ]);
 
         // Extract Airbnb ID from URL
@@ -270,6 +270,8 @@ class AirbnbController extends Controller
             'amenities' => $listing->amenities,
             'images' => $listing->images,
             'airbnb_id' => $listing->airbnb_id,
+            'status' => 'draft',
+            'active' => false,
         ]);
 
         $listing->update(['property_id' => $property->id]);
@@ -297,6 +299,7 @@ class AirbnbController extends Controller
             'airbnbId' => $listing->airbnb_id,
             'url' => $listing->url,
             'title' => $listing->title,
+            'description' => $listing->description,
             'price' => $listing->price ? (float) $listing->price : null,
             'currency' => $listing->currency,
             'location' => $listing->location,
@@ -311,19 +314,20 @@ class AirbnbController extends Controller
                 'id' => $listing->property->id,
                 'title' => $listing->property->title_de,
             ] : null,
-            'images' => array_slice($listing->images ?? [], 0, 3),
+            // All images - no limit
+            'images' => $listing->images ?? [],
+            // Always include amenities
+            'amenities' => $listing->amenities ?? [],
         ];
 
         if ($detailed) {
-            $data['description'] = $listing->description;
-            $data['amenities'] = $listing->amenities;
-            $data['images'] = $listing->images;
             $data['availability'] = $listing->availability;
         }
 
         return $data;
     }
 }
+
 
 
 

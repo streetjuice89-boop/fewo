@@ -72,7 +72,7 @@ export default function PropertiesPage() {
         <form onSubmit={handleSearch} className="mb-8">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-gray pointer-events-none" />
               <input
                 type="text"
                 placeholder="Stadt oder Unterkunft suchen..."
@@ -249,6 +249,7 @@ export default function PropertiesPage() {
     </div>
   );
 }
+
 
 
 

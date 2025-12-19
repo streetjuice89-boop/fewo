@@ -18,7 +18,17 @@ class PropertyController extends Controller
         $cacheKey = 'properties_' . md5(serialize($request->all()));
         
         return Cache::remember($cacheKey, 300, function () use ($request) {
-            $query = Property::with('country')->active();
+            $query = Property::with('country');
+            
+            // For public API, only show online properties by default
+            if (!$request->has('status') && !$request->has('admin')) {
+                $query->where('status', 'online');
+            }
+            
+            // Filter by status (admin)
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
 
             // Filter by country
             if ($request->has('countryId')) {
@@ -151,6 +161,7 @@ class PropertyController extends Controller
             'amenities' => $request->amenities,
             'images' => $request->images,
             'featured' => $request->featured ?? false,
+            'status' => $request->status ?? 'draft',
         ]);
 
         Cache::forget('properties_featured_6');
@@ -183,6 +194,7 @@ class PropertyController extends Controller
             'images' => 'nullable|array',
             'featured' => 'boolean',
             'active' => 'boolean',
+            'status' => 'sometimes|in:draft,online,offline',
         ]);
 
         $property->update([
@@ -203,6 +215,7 @@ class PropertyController extends Controller
             'images' => $request->images ?? $property->images,
             'featured' => $request->featured ?? $property->featured,
             'active' => $request->active ?? $property->active,
+            'status' => $request->status ?? $property->status,
         ]);
 
         Cache::forget("property_{$id}");
@@ -280,6 +293,8 @@ class PropertyController extends Controller
             'images' => $property->images ?? [],
             'featured' => $property->featured,
             'active' => $property->active,
+            'status' => $property->status ?? 'draft',
+            'airbnbId' => $property->airbnb_id,
         ];
 
         if ($detailed) {
@@ -299,6 +314,7 @@ class PropertyController extends Controller
         return $data;
     }
 }
+
 
 
 

@@ -117,6 +117,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transition: all 0.3s;
 }
 
+/* Allow Tailwind padding-left to override */
+.input.pl-10 { padding-left: 2.5rem !important; }
+.input.pl-11 { padding-left: 2.75rem !important; }
+.input.pl-12 { padding-left: 3rem !important; }
+
 .input::placeholder {
   color: var(--color-warm-gray);
 }

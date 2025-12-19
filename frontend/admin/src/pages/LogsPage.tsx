@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { FileText, User, Clock } from 'lucide-react';
+import { User, Clock } from 'lucide-react';
 import { logsApi } from '../lib/api';
 
 export default function LogsPage() {
@@ -118,6 +118,7 @@ export default function LogsPage() {
     </div>
   );
 }
+
 
 
 

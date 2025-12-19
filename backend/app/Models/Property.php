@@ -27,6 +27,7 @@ class Property extends Model
         'images',
         'featured',
         'active',
+        'status',
         'airbnb_id',
     ];
 
@@ -89,6 +90,7 @@ class Property extends Model
             })->exists();
     }
 }
+
 
 
 

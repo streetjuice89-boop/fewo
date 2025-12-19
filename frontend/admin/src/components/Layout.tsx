@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Building2, Calendar, Users, MessageSquare, 
-  Link2, FileText, LogOut, Menu, X 
+  Link2, FileText, LogOut, Menu 
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '../store/auth';
