@@ -1,16 +1,21 @@
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Globe, Menu, X, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '../store/auth';
+import { useLanguageStore } from '../store/language';
 import CookieBanner from './CookieBanner';
 import ChatWidget from './ChatWidget';
+import FlyingPlane from './FlyingPlane';
 
 export default function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const { isAuthenticated, user, logout } = useAuthStore();
+  const { language, setLanguage } = useLanguageStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
 
   const handleLogout = () => {
     logout();
@@ -52,8 +57,8 @@ export default function Layout() {
                   onClick={() => setLangOpen(!langOpen)}
                   className="flex items-center gap-2 text-pearl hover:text-sunset-orange transition-colors"
                 >
-                  <Globe className="w-5 h-5" />
-                  DE
+                  <span className="text-lg">{language === 'de' ? '🇩🇪' : '🇬🇧'}</span>
+                  {language.toUpperCase()}
                 </button>
                 <AnimatePresence>
                   {langOpen && (
@@ -61,10 +66,20 @@ export default function Layout() {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="absolute top-full right-0 mt-2 bg-navy-medium border border-navy-light rounded-lg overflow-hidden"
+                      className="absolute top-full right-0 mt-2 bg-navy-medium border border-navy-light rounded-lg overflow-hidden min-w-[120px]"
                     >
-                      <button className="block w-full px-4 py-2 text-left text-pearl hover:bg-navy-light">DE</button>
-                      <button className="block w-full px-4 py-2 text-left text-pearl hover:bg-navy-light">EN</button>
+                      <button 
+                        onClick={() => { setLanguage('de'); setLangOpen(false); }}
+                        className={`flex items-center gap-2 w-full px-4 py-2 text-left text-pearl hover:bg-navy-light ${language === 'de' ? 'bg-navy-light' : ''}`}
+                      >
+                        <span className="text-lg">🇩🇪</span> Deutsch
+                      </button>
+                      <button 
+                        onClick={() => { setLanguage('en'); setLangOpen(false); }}
+                        className={`flex items-center gap-2 w-full px-4 py-2 text-left text-pearl hover:bg-navy-light ${language === 'en' ? 'bg-navy-light' : ''}`}
+                      >
+                        <span className="text-lg">🇬🇧</span> English
+                      </button>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -182,8 +197,15 @@ export default function Layout() {
         </AnimatePresence>
       </header>
 
+      {/* Flying Plane Banner - only on homepage */}
+      {isHomePage && (
+        <div className="fixed top-20 left-0 right-0 z-40">
+          <FlyingPlane />
+        </div>
+      )}
+
       {/* Main Content */}
-      <main>
+      <main className={isHomePage ? 'pt-[50px]' : ''}>
         <Outlet />
       </main>
 

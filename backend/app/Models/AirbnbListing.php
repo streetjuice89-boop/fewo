@@ -60,3 +60,5 @@ class AirbnbListing extends Model
     }
 }
 
+
+

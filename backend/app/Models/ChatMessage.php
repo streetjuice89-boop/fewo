@@ -38,3 +38,5 @@ class ChatMessage extends Model
     }
 }
 
+
+

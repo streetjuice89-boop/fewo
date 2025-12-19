@@ -325,3 +325,5 @@ class AirbnbController extends Controller
     }
 }
 
+
+
